@@ -208,12 +208,11 @@ namespace ffw
             {
                 this.ipaddr = IPAddress.Parse(ip);
                 this.port = port;
-                server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             }
 
             ~client()
             {
-                //close();
+                close();
             }
 
             // close the tcp connection
@@ -242,6 +241,7 @@ namespace ffw
 
                 try
                 {
+                    server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                     server.Connect(new IPEndPoint(ipaddr, port));
                     return true;
                 }
@@ -299,7 +299,7 @@ namespace ffw
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("ERROR: failed to receive messages: " + e.Message);
+                    Console.WriteLine("WARN: failed to receive messages: " + e.Message);
                     return null;
                 }
             }

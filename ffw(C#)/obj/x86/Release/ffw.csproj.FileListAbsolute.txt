@@ -1,0 +1,5 @@
+D:\work.coders\小游戏(C#客户端 ， Java服务端)\ffw.client\bin\x86\Release\ffw.exe
+D:\work.coders\小游戏(C#客户端 ， Java服务端)\ffw.client\bin\x86\Release\ffw.pdb
+D:\work.coders\小游戏(C#客户端 ， Java服务端)\ffw.client\obj\x86\Release\ResolveAssemblyReference.cache
+D:\work.coders\小游戏(C#客户端 ， Java服务端)\ffw.client\obj\x86\Release\ffw.exe
+D:\work.coders\小游戏(C#客户端 ， Java服务端)\ffw.client\obj\x86\Release\ffw.pdb

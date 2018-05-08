@@ -8,6 +8,23 @@ namespace ffw
 {
     namespace server
     {
+        // define constant command code
+        enum cmd
+        {
+            REQ_REGISTER = 1000,
+            RSP_REGISTER = 9000,
+
+            REQ_LOGIN = 1001,
+            RSP_LOGIN = 9001,
+
+            REQ_LOGOUT = 1002,
+            RSP_LOGOUT = 9002,
+
+            REQ_QUICKPLAY = 1003,
+            RSP_QUICKPLAY = 9003,
+        };
+
+        // define the server's response
         public class result
         {
             public bool succ;
@@ -26,36 +43,48 @@ namespace ffw
             }
         }
 
+        // the base class for msg handler
+        public abstract class msghandler
+        {
+            public abstract void proc(tcp.response rsp);
+        }
+
+        // define session with server
         public class session
         {
             private long running = 0;
             private tcp.client tc = null;
             public Dictionary<int, tcp.response> match = new Dictionary<int, tcp.response>();
 
-            public session(string ip, int port)
-            {
-                tc = new tcp.client(ip, port);
-                tc.connect();
-                match.Clear();
+            public delegate void on_event(tcp.response rsp);
+            public msghandler handler = null;
 
+            public session(msghandler handler, string ip, int port)
+            {
+                this.handler = handler;
+                tc = new tcp.client(ip, port);
                 start();
             }   
 
             public void start()
             {
-                running++;
+                Interlocked.Increment(ref running);
+
+                tc.connect();
+                match.Clear();
+
                 new Thread(new ParameterizedThreadStart(on_message)).Start(this);
             }
 
             public void stop()
             {
-                running++;
+                Interlocked.Increment(ref running);
+                tc.close();
             }
 
-            ~session()
+            private bool send(tcp.request req)
             {
-                stop();
-                tc.close();
+                return req.send(tc);
             }
 
             private tcp.response send(tcp.request req, int timeout /* ms */)
@@ -86,7 +115,7 @@ namespace ffw
                     tick = timeout > 100 ? 100 : timeout;
 
                     match.TryGetValue(req.sn, out rsp);
-                    if(rsp != null)
+                    if (rsp != null)
                         break;
                 }
 
@@ -124,10 +153,9 @@ namespace ffw
                         {
                             s.match[rsp.sn] = rsp;
                         }
-                        else
+                        else // process the unresolved messages
                         {
-                            // FIXME: unhandled message
-                            Console.WriteLine("cmd=[{0}], sn=[{1}]", rsp.cmd, rsp.sn);
+                            if (s.handler != null) s.handler.proc(rsp);
                         }
                     }
                 }
@@ -137,10 +165,11 @@ namespace ffw
             {
                 if (!tc.isConnected())
                 {
-                    return new result(false, "connection lost");
+                    start();
+                    if (!tc.isConnected()) return new result(false, "connection lost");
                 }
 
-                tcp.request req = new tcp.request((short)1001);
+                tcp.request req = new tcp.request((short)cmd.REQ_LOGIN);
                 req.encode(usr);
                 req.encode(passwd);
                 
@@ -159,31 +188,28 @@ namespace ffw
             public result logout(int timeout)
             {
                 if (!tc.isConnected())
-                {
-                    return new result(false, "connection lost");
-                }
+                    return new result();
 
-                tcp.request req = new tcp.request((short)1002);
+                tcp.request req = new tcp.request((short)cmd.REQ_LOGOUT);
                 tcp.response rsp = send(req, timeout);
                 if (rsp == null)
-                {
-                    return new result(false, "no response");
-                }
+                    return new result();
 
-                int result = rsp.nextInt();
-                string errmsg = rsp.nextString();
-                Console.WriteLine("cmd=[{0}], sn=[{1}], result=[{2}], errmsg=[{3}]", rsp.cmd, rsp.sn, result, errmsg);
-                return new result(result==0, errmsg);
+                int res = rsp.nextInt();
+                string msg = rsp.nextString();
+                Console.WriteLine("cmd=[{0}], sn=[{1}], result=[{2}], errmsg=[{3}]", rsp.cmd, rsp.sn, res, msg);
+                return new result(res==0, msg);
             }
 
             public result register(string email, string usr, string passwd, int timeout)
             {
                 if (!tc.isConnected())
                 {
-                    return new result(false, "connection lost");
+                    start();
+                    if(!tc.isConnected()) return new result(false, "connection lost");
                 }
 
-                tcp.request req = new tcp.request((short)1000);
+                tcp.request req = new tcp.request((short)cmd.REQ_REGISTER);
                 req.encode(email);
                 req.encode(usr);
                 req.encode(passwd);
@@ -197,6 +223,21 @@ namespace ffw
                 int result = rsp.nextInt();
                 string errmsg = rsp.nextString();
                 Console.WriteLine("cmd=[{0}], sn=[{1}], result=[{2}], errmsg=[{3}]", rsp.cmd, rsp.sn, result, errmsg);
+                return new result();
+            }
+
+            public result quickplay()
+            {
+                if (!tc.isConnected())
+                {
+                   return new result(false, "connection lost");
+                }
+
+                tcp.request req = new tcp.request((short)cmd.REQ_QUICKPLAY);
+                if(!send(req))
+                {
+                    return new result(false, "network error: failed to send");
+                }
                 return new result();
             }
 

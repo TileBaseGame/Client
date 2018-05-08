@@ -3,3 +3,5 @@ D:\work.coders\小游戏(C#客户端 ， Java服务端)\ffw\bin\Debug\ffw.exe
 D:\work.coders\小游戏(C#客户端 ， Java服务端)\ffw\bin\Debug\ffw.pdb
 D:\work.coders\小游戏(C#客户端 ， Java服务端)\ffw\obj\Debug\ffw.exe
 D:\work.coders\小游戏(C#客户端 ， Java服务端)\ffw\obj\Debug\ffw.pdb
+D:\work.coders\小游戏(C#客户端 ， Java服务端)\ffw.client\obj\Debug\ffw.exe
+D:\work.coders\小游戏(C#客户端 ， Java服务端)\ffw.client\obj\Debug\ffw.pdb
